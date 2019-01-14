@@ -1,0 +1,4 @@
+#!/usr/local/bin/bash
+
+echo Logs for container: 345dea708571
+docker logs 345dea708571

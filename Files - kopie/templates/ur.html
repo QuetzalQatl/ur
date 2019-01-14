@@ -1,0 +1,433 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+    <title>The Royal Game Of Ür</title>
+    <!--- Link to the last version of BabylonJS --->
+    <script src="/babylon.js"></script>
+    <style>
+        html, body {
+            overflow: hidden;
+            width   : 100%;
+            height  : 100%;
+            margin  : 0;
+            padding : 0;
+        }
+
+        #renderCanvas {
+            width   : 100%;
+            height  : 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <script>
+window.addEventListener('DOMContentLoaded', function(){
+	var socket = io.connect('/urlobbie');
+	
+	function emit(path, params) {
+		socket.emit(path, params);
+	}
+
+	%%GAMEVARS%%
+	
+	//  get the canvas DOM element
+	var canvas = document.getElementById('renderCanvas');
+	
+	// load the 3D engine
+	var engine = new BABYLON.Engine(canvas, true);
+	
+	// createScene function that creates and return the scene
+	var createScene = function () {
+	    var scene = new BABYLON.Scene(engine);
+	
+	    //Create a light
+	    var light = new BABYLON.PointLight("Omni", new BABYLON.Vector3(1000, 1000, -1000), scene);
+		
+	    //Create an Arc Rotate Camera - aimed negative z this time
+	    var camera = new BABYLON.ArcRotateCamera("Camera",0, 0, 0, BABYLON.Vector3.Zero(), scene);
+		camera.setPosition(new BABYLON.Vector3(0, 0, -950));
+	    camera.attachControl(canvas, true);
+	
+	    //Creation of a repeated textured material
+		var materialWhite= new BABYLON.StandardMaterial("materialWhite", scene);
+		materialWhite.diffuseTexture = new BABYLON.Texture("/white.png", scene);
+	    materialWhite.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+	    materialWhite.backFaceCulling = true;
+		
+		var materialBlack= new BABYLON.StandardMaterial("materialBlack", scene);
+		materialBlack.diffuseTexture = new BABYLON.Texture("/black.png", scene);
+	    materialBlack.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+	    materialBlack.backFaceCulling = true;
+		
+		
+	    var materialStone= new BABYLON.StandardMaterial("materialStone", scene);
+	    materialStone.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
+		materialStone.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialStone.backFaceCulling = true;
+		
+		var materialDiceGreen= new BABYLON.StandardMaterial("materialDiceGreen", scene);
+	    materialDiceGreen.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
+		materialDiceGreen.emissiveColor = new BABYLON.Color3(0, 0.6, 0);
+	    materialDiceGreen.backFaceCulling = true;
+	
+		var materialDiceRed= new BABYLON.StandardMaterial("materialDiceRed", scene);
+	    materialDiceRed.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
+		materialDiceRed.emissiveColor = new BABYLON.Color3(0.6, 0, 0);
+	    materialDiceRed.backFaceCulling = true;
+		
+		var materialRose= new BABYLON.StandardMaterial("materialRose", scene);
+	    materialRose.diffuseTexture = new BABYLON.Texture("/rose.png", scene);
+		materialRose.emissiveColor = new BABYLON.Color3(1, 0, 0);
+	    materialRose.backFaceCulling = true;
+		
+		var materialNone= new BABYLON.StandardMaterial("materialNone", scene);
+		materialNone.wireframe=true;
+	    materialNone.backFaceCulling = true;
+		materialNone.alpha = 0.0;
+	    
+		var x;
+	    var y;
+	    var z;
+	    
+	    x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = blocksArray.length; i < len; i++) {
+			var newx=(x-3.5)*120;
+			var newy=(y-1.0)*120;
+			var newz=(z-.5)*120;
+			var block = BABYLON.Mesh.CreateBox("block"+i.toString(), 120, scene);
+			if (blocksArray[i]=='R'){
+				block.material = materialRose;
+			} 
+			if (blocksArray[i]=='S'){
+				block.material = materialStone;
+			} 
+			if (blocksArray[i]=='0'){
+				block.material = materialNone;
+			} 
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+	
+			x=x+1;
+			if (x>7){
+				x=0;
+				y=y+1;
+			}
+		} 
+		
+		x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = onBoard.length; i < len; i++) {
+			var newx=(x-3.5)*120;
+			var newy=(y-1.0)*120;
+			var newz=-120;
+			var block = BABYLON.Mesh.CreateSphere("Board"+i.toString(), 80, 80, scene);	
+			if (onBoard[i]=='W'){
+				block.material = materialWhite;
+			} 
+			if (onBoard[i]=='B'){
+				block.material = materialBlack;
+			} 
+			if (onBoard[i]=='0'){
+				block.material = materialNone;
+			} 
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+			block.rotate(BABYLON.Axis.X, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Y, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			
+			x=x+1;
+			if (x>7){
+				x=0;
+				y=y+1;
+			}
+		}   
+		
+		
+		x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = topPlayerIn.length; i < len; i++) {
+			var newx=x*82-480;
+			var newy=235;
+			var newz=-25;
+			var block = BABYLON.Mesh.CreateSphere("TopIn"+i.toString(), 80, 80, scene);	
+			if (topPlayerIn[i]=='B'){
+				block.material = materialBlack;
+			} 
+			if (topPlayerIn[i]=='W'){
+				block.material = materialWhite;
+			} 
+			if (topPlayerIn[i]=='0'){
+				block.material = materialNone;
+			} 
+			
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+			block.rotate(BABYLON.Axis.X, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Y, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			
+			x=x+1;
+		} 
+		x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = bottomPlayerIn.length; i < len; i++) {
+			var newx=x*82-480;
+			var newy=-235;
+			var newz=-25;
+			var block = BABYLON.Mesh.CreateSphere("BottomIn"+i.toString(), 80, 80, scene);	
+	
+			if (bottomPlayerIn[i]=='B'){
+				block.material = materialBlack;
+			} 
+			if (bottomPlayerIn[i]=='W'){
+				block.material = materialWhite;
+			} 
+			if (bottomPlayerIn[i]=='0'){
+				block.material = materialNone;
+			} 
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+			block.rotate(BABYLON.Axis.X, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Y, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			x=x+1;
+		}  
+		x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = topPlayerOut.length; i < len; i++) {
+			var newx=480-x*82;
+			var newy=235;
+			var newz=-25;
+			var block = BABYLON.Mesh.CreateSphere("TopOut"+i.toString(), 80, 80, scene);	
+	
+			if (topPlayerOut[i]=='B'){
+				block.material = materialBlack;
+			} 
+			if (topPlayerOut[i]=='W'){
+				block.material = materialWhite;
+			} 
+			if (topPlayerOut[i]=='0'){
+				block.material = materialNone;
+			} 
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+			block.rotate(BABYLON.Axis.X, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Y, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			x=x+1;
+		} 
+		x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = bottomPlayerOut.length; i < len; i++) {
+			var newx=480-x*82;
+			var newy=-235;
+			var newz=-25;
+			var block = BABYLON.Mesh.CreateSphere("BottomOut"+i.toString(), 80, 80, scene);	
+	
+			if (bottomPlayerOut[i]=='B'){
+				block.material = materialBlack;
+			} 
+			if (bottomPlayerOut[i]=='W'){
+				block.material = materialWhite;
+			} 
+			if (bottomPlayerOut[i]=='0'){
+				block.material = materialNone;
+			} 
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+			block.rotate(BABYLON.Axis.X, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Y, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			x=x+1;
+		}  
+		
+		x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = bottomDice.length; i < len; i++) {
+			var newx=(x-2)*120;
+			var newy=-335;
+			var newz=-25;
+			var block = BABYLON.MeshBuilder.CreatePolyhedron("BottomDice"+i.toString(), {type: 0, size: 30}, scene);
+	
+			if (bottomDice[i]=='0'){
+				block.material = materialDiceRed;
+			} 
+			if (bottomDice[i]=='1'){
+				block.material = materialDiceGreen;
+			} 
+			if (bottomDice[i]=='2'){
+				block.material = materialStone;
+			}
+			if (bottomDice[i]=='3'){
+				block.material = materialNone;
+			} 
+			
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+			block.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			x=x+1;
+		} 
+		
+		x=0;
+	    y=0;
+	    z=0;
+	    
+		for (var i = 0, len = topDice.length; i < len; i++) {
+			var newx=(x-1)*120;
+			var newy=335;
+			var newz=-25;
+			var block = BABYLON.MeshBuilder.CreatePolyhedron("TopDice"+i.toString(), {type: 0, size: 30}, scene);
+	
+			if (topDice[i]=='0'){
+				block.material = materialDiceRed;
+			} 
+			if (topDice[i]=='1'){
+				block.material = materialDiceGreen;
+			} 
+			if (topDice[i]=='2'){
+				block.material = materialStone;
+			} 
+			if (topDice[i]=='3'){
+				block.material = materialNone;
+			} 
+			
+			block.position.x=newx;
+			block.position.y=newy;
+			block.position.z=newz;
+			block.rotate(BABYLON.Axis.Y, Math.PI, BABYLON.Space.LOCAL);
+			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			x=x+1;
+		} 
+	
+	    return scene;
+	};
+
+	// call the createScene function
+	var scene = createScene();
+	
+	// run the render loop
+	engine.runRenderLoop(function(){
+	    scene.render();
+	});
+	
+	// the canvas/window resize event handler
+	window.addEventListener('resize', function(){
+	    engine.resize();
+	});
+	
+	// Socket events:
+	socket.on('connect', function() {
+	    console.log('socket.id: ', socket.id, ' connected');
+	    emit('test');
+	});
+	
+	socket.on('connect_error', (error) => {
+	  console.log('Could not connect to socket');
+	  console.log(error);
+	});
+	
+	socket.on('connect_timeout', (timeout) => {
+	  console.log('Socket connection timed out');
+	  console.log(timeout);
+	});
+	
+	socket.on('error', (error) => {
+	  console.log('Socket connection error');
+	  console.log(error);
+	});
+	
+	socket.on('disconnect', (reason) => {
+	  console.log('socket.id: ', socket.id, ' disconnected');
+	  console.log(reason);
+	});
+	
+	
+	socket.on('newState', function(newBoard) {
+		console.log('server says newState', newBoard);
+		gamestate=newBoard[0];
+		topDice=newBoard[1];
+		topPlayerIn=newBoard[2];
+		topPlayerOut=newBoard[3];
+		onBoard=newBoard[4];
+		bottomPlayerIn=newBoard[5];
+		bottomPlayerOut=newBoard[6];
+		bottomDice=newBoard[7];
+		console.log(gamestate);
+		
+		for (var i = 0, len = topDice.length; i < len; i++) {
+			block = scene.getMeshByName("TopDice"+i.toString());
+			if (topDice[i]=='0'){
+				block.material = scene.getMaterialByName("materialDiceRed");
+			} 
+			if (topDice[i]=='1'){
+				block.material = scene.getMaterialByName("materialDiceGreen");
+			} 
+			if (topDice[i]=='2'){
+				block.material = scene.getMaterialByName("materialStone");
+			} 
+			if (topDice[i]=='3'){
+				block.material = scene.getMaterialByName("materialNone");
+			} 
+		}
+	
+		for (var i = 0, len = topPlayerIn.length; i < len; i++) {
+			var block = scene.getMeshByName("TopIn"+i.toString());
+			if (topPlayerIn[i]=='B'){
+				block.material = scene.getMaterialByName("materialBlack");
+			} 
+			if (topPlayerIn[i]=='W'){
+				block.material = scene.getMaterialByName("materialWhite");
+			} 
+			if (topPlayerIn[i]=='0'){
+				block.material = scene.getMaterialByName("materialNone");
+			} 
+		} 
+		
+		for (var i = 0, len = topDice.length; i < len; i++) {
+			block = scene.getMeshByName("BottomDice"+i.toString());
+			if (bottomDice[i]=='0'){
+				block.material = scene.getMaterialByName("materialDiceRed");
+			} 
+			if (bottomDice[i]=='1'){
+				block.material = scene.getMaterialByName("materialDiceGreen");
+			} 
+			if (bottomDice[i]=='2'){
+				block.material = scene.getMaterialByName("materialStone");
+			} 
+			if (bottomDice[i]=='3'){
+				block.material = scene.getMaterialByName("materialNone");
+			} 
+		}
+	});
+});
+    </script>
+</body>
+</html>

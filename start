@@ -1,0 +1,33 @@
+#!/usr/local/bin/bash
+
+PORT=$1
+
+re='^[0-9]+$'
+if ! [[ $PORT =~ $re ]] ; then
+   PORT=5003
+fi
+
+cd /github/ur
+docker build -t baskoning/ur .
+docker run -ti -d -p $PORT:$PORT -e PORT=$PORT baskoning/ur
+DOCKERID="$(docker ps -alq)"
+
+rm -rf stop
+echo '#!/usr/local/bin/bash'>> stop
+echo >> stop
+echo 'echo stopping server...' >> stop
+echo docker stop $DOCKERID >> stop
+ 
+rm -rf logs
+echo '#!/usr/local/bin/bash'>> logs
+echo >> logs
+echo 'echo Logs for container: '$DOCKERID >> logs
+echo 'docker logs '$DOCKERID >> logs
+
+echo 'container running using port '$PORT
+echo 'To see the logs:'
+echo ' bash logs'
+echo 'To start The Royal Game Of Ur with a different port, for example 5001, use:'
+echo ' bash start 5001'
+echo 'To stop The Royal Game Of Ur container:'
+echo ' bash stop'
