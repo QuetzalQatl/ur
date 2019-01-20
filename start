@@ -10,6 +10,7 @@ fi
 cd /github/ur
 docker build -t baskoning/ur .
 docker run -ti -d -p $PORT:$PORT -e PORT=$PORT baskoning/ur
+#docker run -ti -p $PORT:$PORT -e PORT=$PORT baskoning/ur
 DOCKERID="$(docker ps -alq)"
 
 rm -rf stop

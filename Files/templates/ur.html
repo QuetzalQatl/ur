@@ -19,24 +19,109 @@
             height  : 100%;
             touch-action: none;
         }
+	}
+    .box {
+		width:98%;
+		height:38%;
+		position:fixed;
+		margin-left:1%; 
+		margin-top:1%; 
+		top:31%;
+		left:0px;
+	}
+	
+	.button {
+		-webkit-transition-duration: 0.1s; /* For Safari */
+		transition-duration: 0.1s;
+		background-color: #504040; 
+		border: 2px solid #101010;
+		color: #FFEEEE;
+		text-align: center;
+		font-size: 42px;
+		width: 98%;
+	}
+	
+	.button:hover {
+		background-color: #908080; 
+		color: white;
+	}
+
+	.text {
+		background-color: #FFFEDD; 
+		border: 1px solid #89258c; 
+		color: #312533;
+		text-align: center;
+		font-size: 42px;
+		width: 98%;
+	}
+	
+	input:-moz-read-only { /* For Firefox */
+		background-color: #F4F4ED;
+	}
+	
+	input:read-only {
+		background-color: #F4F4ED;
+	}
     </style>
 </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
+    <canvas id="renderCanvas" style="display: none;"></canvas>
+ <div id="setupDialogue" style="display: none;">
+ <table class="box">
+    <tr>
+        <td>Nr of Admin Stones (top): </td><td><input id="adminStones" class="text" readonly="true" value="7"></input></td>
+    </tr>
+    <tr>
+        <td>Nr of Player Stones (bottom): </td><td><input id="playerStones" class="text" readonly="true" value="7"></input></td>
+    </tr>
+    <tr>
+        <td>Overshoot or No Overshoot?</td><td><button class="button" type="button" id="allowOvershoot">Overshoot</button></td>
+    </tr>
+    <tr>
+        <td>Allow going back at then end?</td><td><button class="button" type="button" id="allowBackwards">No AllowBack</button></td>
+    </tr>
+    <tr>
+        <td>Route to take?</td><td><button class="button" type="button" id="route">Short</button></td>
+    </tr>
+    <tr>
+        <td>How to determine who starts?</td><td><button class="button" type="button" id="startRule">Roll</button></td>
+    </tr>
+    <tr>
+        <td>Admin has color</td><td><button class="button" type="button" id="adminColor">Black</button></td>
+    </tr>
+    <tr>
+        <td></td><td><button class="button" type="button" id="buttonStartGame">Start Game</button></td>
+    </tr>
+  </table>
+ </div>    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
     <script>
 window.addEventListener('DOMContentLoaded', function(){
-	var socket = io.connect('/urlobbie');
-	
-	function emit(path, params=null) {
-		if (params==null){
-			socket.emit(path);
-		}else{
-			socket.emit(path, params);
-		}
-	}
 
-	%%GAMEVARS%%
+	var socket = io.connect('/urlobbie');
+	var boardState = {};
+	var gameStatePrevious='';
+	var settings={};
+	var adminEventsLoaded=false;
+	var materialWhite;
+	var materialBlack;
+	var materialStone;
+	var materialNone;
+	var materialRose;
+	var materialGreen;
+	var	materialRed;
+	var materialWood0;
+	var materialWood1;
+	var materialWood2;
+	var materialWood3;
+	var materialWood4;
+	var materialWood5;
+	var materialWood6;
+	var materialWood7;
+	var soundThrowDice1;
+	var soundThrowDice2;
+	var soundThrowDice3;
+	var blocksArray='RSSS00RSSSSRSSSSRSSS00RS';
 	
 	//  get the canvas DOM element
 	var canvas = document.getElementById('renderCanvas');
@@ -57,138 +142,183 @@ window.addEventListener('DOMContentLoaded', function(){
 	    camera.attachControl(canvas, true);
 	
 	    //Creation of a repeated textured material
-		var materialWhite= new BABYLON.StandardMaterial("materialWhite", scene);
+		materialWhite= new BABYLON.StandardMaterial("materialWhite", scene);
 		materialWhite.diffuseTexture = new BABYLON.Texture("/white.png", scene);
 	    materialWhite.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
 	    materialWhite.backFaceCulling = true;
 		
-		var materialBlack= new BABYLON.StandardMaterial("materialBlack", scene);
+		materialBlack= new BABYLON.StandardMaterial("materialBlack", scene);
 		materialBlack.diffuseTexture = new BABYLON.Texture("/black.png", scene);
 	    materialBlack.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
 	    materialBlack.backFaceCulling = true;
 		
-		var materialWood0= new BABYLON.StandardMaterial("materialWood0", scene);
+		materialWood0= new BABYLON.StandardMaterial("materialWood0", scene);
 	    materialWood0.diffuseTexture = new BABYLON.Texture("/wood0.png", scene);
 		materialWood0.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 	    materialWood0.backFaceCulling = true;
 	    
-	    var materialWood1= new BABYLON.StandardMaterial("materialWood1", scene);
+	    materialWood1= new BABYLON.StandardMaterial("materialWood1", scene);
 	    materialWood1.diffuseTexture = new BABYLON.Texture("/wood1.png", scene);
 		materialWood1.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 	    materialWood1.backFaceCulling = true;
 	    
-	    var materialWood2= new BABYLON.StandardMaterial("materialWood2", scene);
+	    materialWood2= new BABYLON.StandardMaterial("materialWood2", scene);
 	    materialWood2.diffuseTexture = new BABYLON.Texture("/wood2.png", scene);
 		materialWood2.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 	    materialWood2.backFaceCulling = true;
 	    
-	    var materialWood3= new BABYLON.StandardMaterial("materialWood3", scene);
+	    materialWood3= new BABYLON.StandardMaterial("materialWood3", scene);
 	    materialWood3.diffuseTexture = new BABYLON.Texture("/wood3.png", scene);
 		materialWood3.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 	    materialWood3.backFaceCulling = true;
 	    
-	    var materialStone= new BABYLON.StandardMaterial("materialStone", scene);
+	    materialWood4= new BABYLON.StandardMaterial("materialWood4", scene);
+	    materialWood4.diffuseTexture = new BABYLON.Texture("/wood4.png", scene);
+		materialWood4.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood4.backFaceCulling = true;
+	    
+	    materialWood5= new BABYLON.StandardMaterial("materialWood5", scene);
+	    materialWood5.diffuseTexture = new BABYLON.Texture("/wood5.png", scene);
+		materialWood5.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood5.backFaceCulling = true;
+	    
+	    materialWood6= new BABYLON.StandardMaterial("materialWood6", scene);
+	    materialWood6.diffuseTexture = new BABYLON.Texture("/wood6.png", scene);
+		materialWood6.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood6.backFaceCulling = true;
+	    
+	    materialWood7= new BABYLON.StandardMaterial("materialWood7", scene);
+	    materialWood7.diffuseTexture = new BABYLON.Texture("/wood7.png", scene);
+		materialWood7.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood7.backFaceCulling = true;
+	    
+	    materialStone= new BABYLON.StandardMaterial("materialStone", scene);
 	    materialStone.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
 		materialStone.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 	    materialStone.backFaceCulling = true;
 		
-		var materialDiceGreen= new BABYLON.StandardMaterial("materialDiceGreen", scene);
-	    materialDiceGreen.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
-		materialDiceGreen.emissiveColor = new BABYLON.Color3(0, 0.6, 0);
-	    materialDiceGreen.backFaceCulling = true;
+		materialGreen= new BABYLON.StandardMaterial("materialGreen", scene);
+	    materialGreen.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
+		materialGreen.emissiveColor = new BABYLON.Color3(0, 0.6, 0);
+	    materialGreen.backFaceCulling = true;
 	
-		var materialDiceRed= new BABYLON.StandardMaterial("materialDiceRed", scene);
-	    materialDiceRed.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
-		materialDiceRed.emissiveColor = new BABYLON.Color3(0.6, 0, 0);
-	    materialDiceRed.backFaceCulling = true;
+		materialRed= new BABYLON.StandardMaterial("materialRed", scene);
+	    materialRed.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
+		materialRed.emissiveColor = new BABYLON.Color3(0.6, 0, 0);
+	    materialRed.backFaceCulling = true;
 		
-		var materialRose= new BABYLON.StandardMaterial("materialRose", scene);
+		materialRose= new BABYLON.StandardMaterial("materialRose", scene);
 	    materialRose.diffuseTexture = new BABYLON.Texture("/rose.png", scene);
 		materialRose.emissiveColor = new BABYLON.Color3(1, 0, 0);
 	    materialRose.backFaceCulling = true;
 		
-		var materialNone= new BABYLON.StandardMaterial("materialNone", scene);
+		materialNone= new BABYLON.StandardMaterial("materialNone", scene);
 		materialNone.wireframe=true;
 	    materialNone.backFaceCulling = true;
 		materialNone.alpha = 0.0;
-	    
+		
+		soundThrowDice1 = new BABYLON.Sound("soundThrowDice1", "/roll1.wav", scene);
+		soundThrowDice2 = new BABYLON.Sound("soundThrowDice2", "/roll2.wav", scene);
+		soundThrowDice3 = new BABYLON.Sound("soundThrowDice3", "/roll3.wav", scene);
+		
+		var block = BABYLON.Mesh.CreateBox("background", 1500, scene);
+		block.position.x=0;
+		block.position.y=0;
+		block.position.z=750;
+		block.material = materialWood0;
+				
 		var x;
 	    var y;
 	    var z;
 	    
 	    x=0;
-	    y=0;
+	    y=2;
 	    z=0;
 	    var counter=0;
-	    var woodtype=[0,1,2,3,2,3,0,1,   1,0,3,2,1,0,3,2,   2,3,0,1,0,1,2,3]
-		for (var i = 0, len = blocksArray.length; i < len; i++) {
-			var newx=(x-3.5)*120;
-			var newy=(y-1.0)*120;
-			var newz=(z-.5)*120;
-			var block = BABYLON.Mesh.CreateBox("block"+i.toString(), 120, scene);
-			if (blocksArray[i]=='R'){
-				block.material = materialRose;
-			} 
-			if (blocksArray[i]=='S'){
-				type=woodtype[counter];
-				if (type==0){
-					block.material = materialWood0;
-				}
-				if (type==1){
-					block.material = materialWood1;
-				}
-				if (type==2){
-					block.material = materialWood2;
-				}
-				if (type==3){
-					block.material = materialWood3;
-				}
-			} 
-			if (blocksArray[i]=='0'){
-				block.material = materialNone;
-			} 
-			block.position.x=newx;
-			block.position.y=newy;
-			block.position.z=newz;
+	    var woodtype=[0,5,4,1,2,7,6,3,  1,2,3,4,5,0,7,6,   2,5,6,7,4,3,0,1]
+	    for (var i = 0, len = blocksArray.length; i < len; i++) {
+	    	if ((x==4 && y==0) || (x==5 && y==0) || (x==4 && y==2) || (x==5 && y==2)){
+	    		console.log('skipping dead box');
+	    	}else{
+				var newx=(x-3.5)*120;
+				var newy=(y-1.0)*120;
+				var newz=(z-.5)*120;
+				var block = BABYLON.Mesh.CreateBox("block"+i.toString(), 120, scene);
+				console.log("block"+i.toString(), newx, newy, newz);
+				if (blocksArray[i]=='R'){
+					block.material = materialRose;
+				} 
+				if (blocksArray[i]=='S'){
+					type=woodtype[counter];
+					if (type==0){
+						block.material = materialWood0;
+					}
+					if (type==1){
+						block.material = materialWood1;
+					}
+					if (type==2){
+						block.material = materialWood2;
+					}
+					if (type==3){
+						block.material = materialWood3;
+					}
+					if (type==4){
+						block.material = materialWood4;
+					}
+					if (type==5){
+						block.material = materialWood5;
+					}
+					if (type==6){
+						block.material = materialWood6;
+					}
+					if (type==7){
+						block.material = materialWood7;
+					}
+				} 
+				if (blocksArray[i]=='0'){
+					block.material = materialNone;
+				} 
+				block.position.x=newx;
+				block.position.y=newy;
+				block.position.z=newz;
+			}
 	
 			x=x+1;
 			if (x>7){
 				x=0;
-				y=y+1;
+				y=y-1;
 			}
 			counter=counter+1;
 			
 		} 
 		
+		
 		x=0;
-	    y=0;
+	    y=2;
 	    z=0;
 	    
-		for (var i = 0, len = onBoard.length; i < len; i++) {
-			var newx=(x-3.5)*120;
-			var newy=(y-1.0)*120;
-			var newz=-120;
-			var block = BABYLON.Mesh.CreateSphere("Board"+i.toString(), 80, 80, scene);	
-			if (onBoard[i]=='W'){
-				block.material = materialWhite;
-			} 
-			if (onBoard[i]=='B'){
-				block.material = materialBlack;
-			} 
-			if (onBoard[i]=='0'){
+		for (var i = 0, len = 24; i < len; i++) {
+			if (i==4 || i==5 || i==20 || i==21){
+	    		console.log('skipping dead board');
+	    	}else{
+				var newx=(x-3.5)*120;
+				var newy=(y-1.0)*120;
+				var newz=-120;
+				var block = BABYLON.Mesh.CreateSphere("board"+i.toString(), 80, 80, scene);
+				console.log("board"+i.toString(), newx, newy, newz);			
 				block.material = materialNone;
-			} 
-			block.position.x=newx;
-			block.position.y=newy;
-			block.position.z=newz;
-			block.rotate(BABYLON.Axis.X, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
-			block.rotate(BABYLON.Axis.Y, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
-			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+				block.position.x=newx;
+				block.position.y=newy;
+				block.position.z=newz;
+				block.rotate(BABYLON.Axis.X, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+				block.rotate(BABYLON.Axis.Y, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+				block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			}
 			
 			x=x+1;
 			if (x>7){
 				x=0;
-				y=y+1;
+				y=y-1;
 			}
 		}   
 		
@@ -197,20 +327,12 @@ window.addEventListener('DOMContentLoaded', function(){
 	    y=0;
 	    z=0;
 	    
-		for (var i = 0, len = topPlayerIn.length; i < len; i++) {
+		for (var i = 0, len=12; i < len; i++) {
 			var newx=x*82-480;
 			var newy=235;
 			var newz=-25;
-			var block = BABYLON.Mesh.CreateSphere("TopIn"+i.toString(), 80, 80, scene);	
-			if (topPlayerIn[i]=='B'){
-				block.material = materialBlack;
-			} 
-			if (topPlayerIn[i]=='W'){
-				block.material = materialWhite;
-			} 
-			if (topPlayerIn[i]=='0'){
-				block.material = materialNone;
-			} 
+			var block = BABYLON.Mesh.CreateSphere("adminOut"+i.toString(), 80, 80, scene);	
+			block.material = materialNone;
 			
 			block.position.x=newx;
 			block.position.y=newy;
@@ -225,21 +347,13 @@ window.addEventListener('DOMContentLoaded', function(){
 	    y=0;
 	    z=0;
 	    
-		for (var i = 0, len = bottomPlayerIn.length; i < len; i++) {
+		for (var i = 0, len = 12; i < len; i++) {
 			var newx=x*82-480;
 			var newy=-235;
 			var newz=-25;
-			var block = BABYLON.Mesh.CreateSphere("BottomIn"+i.toString(), 80, 80, scene);	
-	
-			if (bottomPlayerIn[i]=='B'){
-				block.material = materialBlack;
-			} 
-			if (bottomPlayerIn[i]=='W'){
-				block.material = materialWhite;
-			} 
-			if (bottomPlayerIn[i]=='0'){
-				block.material = materialNone;
-			} 
+			var block = BABYLON.Mesh.CreateSphere("playerOut"+i.toString(), 80, 80, scene);	
+			block.material = materialNone;
+			 
 			block.position.x=newx;
 			block.position.y=newy;
 			block.position.z=newz;
@@ -252,21 +366,14 @@ window.addEventListener('DOMContentLoaded', function(){
 	    y=0;
 	    z=0;
 	    
-		for (var i = 0, len = topPlayerOut.length; i < len; i++) {
+		for (var i = 0, len = 12; i < len; i++) {
 			var newx=480-x*82;
 			var newy=235;
 			var newz=-25;
-			var block = BABYLON.Mesh.CreateSphere("TopOut"+i.toString(), 80, 80, scene);	
+			var block = BABYLON.Mesh.CreateSphere("adminIn"+i.toString(), 80, 80, scene);	
 	
-			if (topPlayerOut[i]=='B'){
-				block.material = materialBlack;
-			} 
-			if (topPlayerOut[i]=='W'){
-				block.material = materialWhite;
-			} 
-			if (topPlayerOut[i]=='0'){
-				block.material = materialNone;
-			} 
+			block.material = materialNone;
+			 
 			block.position.x=newx;
 			block.position.y=newy;
 			block.position.z=newz;
@@ -279,21 +386,13 @@ window.addEventListener('DOMContentLoaded', function(){
 	    y=0;
 	    z=0;
 	    
-		for (var i = 0, len = bottomPlayerOut.length; i < len; i++) {
+		for (var i = 0, len = 12; i < len; i++) {
 			var newx=480-x*82;
 			var newy=-235;
 			var newz=-25;
-			var block = BABYLON.Mesh.CreateSphere("BottomOut"+i.toString(), 80, 80, scene);	
+			var block = BABYLON.Mesh.CreateSphere("playerIn"+i.toString(), 80, 80, scene);	
 	
-			if (bottomPlayerOut[i]=='B'){
-				block.material = materialBlack;
-			} 
-			if (bottomPlayerOut[i]=='W'){
-				block.material = materialWhite;
-			} 
-			if (bottomPlayerOut[i]=='0'){
-				block.material = materialNone;
-			} 
+			block.material = materialNone;
 			block.position.x=newx;
 			block.position.y=newy;
 			block.position.z=newz;
@@ -307,24 +406,13 @@ window.addEventListener('DOMContentLoaded', function(){
 	    y=0;
 	    z=0;
 	    
-		for (var i = 0, len = bottomDice.length; i < len; i++) {
+		for (var i = 0, len = 4; i < len; i++) {
 			var newx=(x-2)*120;
 			var newy=-335;
 			var newz=-25;
-			var block = BABYLON.MeshBuilder.CreatePolyhedron("BottomDice"+i.toString(), {type: 0, size: 30}, scene);
+			var block = BABYLON.MeshBuilder.CreatePolyhedron("playerDices"+i.toString(), {type: 0, size: 30}, scene);
 	
-			if (bottomDice[i]=='0'){
-				block.material = materialDiceRed;
-			} 
-			if (bottomDice[i]=='1'){
-				block.material = materialDiceGreen;
-			} 
-			if (bottomDice[i]=='2'){
-				block.material = materialStone;
-			}
-			if (bottomDice[i]=='3'){
-				block.material = materialNone;
-			} 
+			block.material = materialNone;
 			
 			block.position.x=newx;
 			block.position.y=newy;
@@ -338,24 +426,13 @@ window.addEventListener('DOMContentLoaded', function(){
 	    y=0;
 	    z=0;
 	    
-		for (var i = 0, len = topDice.length; i < len; i++) {
+		for (var i = 0, len = 4; i < len; i++) {
 			var newx=(x-1)*120;
 			var newy=335;
 			var newz=-25;
-			var block = BABYLON.MeshBuilder.CreatePolyhedron("TopDice"+i.toString(), {type: 0, size: 30}, scene);
+			var block = BABYLON.MeshBuilder.CreatePolyhedron("adminDices"+i.toString(), {type: 0, size: 30}, scene);
 	
-			if (topDice[i]=='0'){
-				block.material = materialDiceRed;
-			} 
-			if (topDice[i]=='1'){
-				block.material = materialDiceGreen;
-			} 
-			if (topDice[i]=='2'){
-				block.material = materialStone;
-			} 
-			if (topDice[i]=='3'){
-				block.material = materialNone;
-			} 
+			block.material = materialNone;
 			
 			block.position.x=newx;
 			block.position.y=newy;
@@ -364,9 +441,111 @@ window.addEventListener('DOMContentLoaded', function(){
 			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
 			x=x+1;
 		} 
-	
 	    return scene;
 	};
+	
+	function updateBoard() {
+		//console.log('updateBoard');
+		//console.log(settings);
+		//console.log(boardState);
+	    
+		for (var i = 0, len = 24; i < len; i++) {
+			if (i!=4 && i!=5 && i!=20 && i!=21){
+				var block = scene.getMeshByName("board"+i.toString());	
+				if (boardState['board'][i]=='0'){
+					block.material = materialNone;
+				}
+				if (boardState['board'][i]=='B'){
+					block.material = materialBlack;
+				}
+				if (boardState['board'][i]=='W'){
+					block.material = materialWhite;
+				}			
+			}
+		}   		
+		for (var i = 0, len=12; i < len; i++) {
+			var block = scene.getMeshByName("adminOut"+i.toString());	
+			if (i<boardState['adminOut']){
+				if (settings['adminColor']=='Black'){
+					block.material = materialBlack;
+				}else{
+					block.material = materialWhite;
+				}
+			}else{			
+				block.material = materialNone;
+			}			
+		} 
+		for (var i = 0, len = 12; i < len; i++) {
+			var block = scene.getMeshByName("playerOut"+i.toString());	
+			if (i<boardState['playerOut']){
+				if (settings['adminColor']=='White'){
+					block.material = materialBlack;
+				}else{
+					block.material = materialWhite;
+				}
+			}else{			
+				block.material = materialNone;
+			}			
+		}  
+	    
+		for (var i = 0, len = 12; i < len; i++) {
+			var block = scene.getMeshByName("adminIn"+i.toString());	
+			if (i<boardState['adminIn']){
+				if (settings['adminColor']=='Black'){
+					block.material = materialBlack;
+				}else{
+					block.material = materialWhite;
+				}
+			}else{			
+				block.material = materialNone;
+			}	
+		} 
+	    
+		for (var i = 0, len = 12; i < len; i++) {
+			var block = scene.getMeshByName("playerIn"+i.toString());	
+			if (i<boardState['playerIn']){
+				if (settings['adminColor']=='White'){
+					block.material = materialBlack;
+				}else{
+					block.material = materialWhite;
+				}
+			}else{			
+				block.material = materialNone;
+			}	
+		} 
+	    
+		for (var i = 0, len = 4; i < len; i++) {
+			var block = scene.getMeshByName("playerDices"+i.toString());
+			if (boardState['playerDices'][i]=='0'){
+				block.material = materialNone;
+			}
+			if (boardState['playerDices'][i]=='S'){
+				block.material = materialStone;
+			}
+			if (boardState['playerDices'][i]=='G'){
+				block.material = materialGreen;
+			}
+			if (boardState['playerDices'][i]=='R'){
+				block.material = materialRed;
+			}
+		} 
+	    
+		for (var i = 0, len = 4; i < len; i++) {
+			var block = scene.getMeshByName("adminDices"+i.toString());
+			if (boardState['adminDices'][i]=='0'){
+				block.material = materialNone;
+			}
+			if (boardState['adminDices'][i]=='S'){
+				block.material = materialStone;
+			}
+			if (boardState['adminDices'][i]=='G'){
+				block.material = materialGreen;
+			}
+			if (boardState['adminDices'][i]=='R'){
+				block.material = materialRed;
+			}
+		} 
+	}	
 
 	// call the createScene function
 	var scene = createScene();
@@ -383,8 +562,10 @@ window.addEventListener('DOMContentLoaded', function(){
 	
 	// Socket events:
 	socket.on('connect', function() {
-	    console.log('socket.id: ', socket.id, ' connected');
-	    emit('getState');
+	    console.log('socket connected');
+	    socket.emit('getSettings');
+	    socket.emit('whoAmI');
+	    socket.emit('getState');
 	});
 	
 	socket.on('connect_error', (error) => {
@@ -407,62 +588,390 @@ window.addEventListener('DOMContentLoaded', function(){
 	  console.log(reason);
 	});
 	
+	socket.on('gamePaused', function() {
+		console.log('Game Paused');
+	});	
+	
+	socket.on('newSetting', function(what, to) {
+		//console.log(what, to);	
+		if (what!='youAre'){
+			if (what=='adminStones' || what=='playerStones'){
+				document.getElementById(what).value =to;
+			}else{
+				document.getElementById(what).textContent =to;
+			}
+		}
+		settings[what]=to;
+	});
+	
+	function whatIsClicked(p) {
+		if (p.y==-335 && p.z==-25){
+			//console.log('playerDices Clicked');
+			return 'playerDices';
+		}
+		if (p.y==335 && p.z==-25){
+			//console.log('adminDices Clicked');
+			return 'adminDices';
+		}
+		if (p.y==-235 && p.z==-25){
+			//console.log('playerOut Clicked');
+			return 'playerOut';
+		}
+		if (p.y==235 && p.z==-25){
+			//console.log('adminOut Clicked');
+			return 'adminOut';
+		}
+		if (p.y==-235 && p.z==-24){
+			//console.log('playerIn Clicked');
+			return 'playerIn';
+		}
+		if (p.y==235 && p.z==-24){
+			//console.log('adminIn Clicked');
+			return 'adminIn';
+		}
+		if (p.z==-120 || p.z==-60) {
+			if (p.z==-60) {
+				//console.log('blocks Clicked');
+			}
+			if (p.z==-120) {
+				//console.log('Balls on blocks Clicked');
+			}
+
+			offset=0;
+			if (p.y==120){
+				//console.log('top row');
+				//offset=offset+0;
+			}
+			if (p.y==0){
+				//console.log('middle row');
+				offset=offset+8;
+			}
+			if (p.y==-120){
+				//console.log('bottom row');
+				offset=offset+16;
+			}
+			if (p.x==-420){
+				//console.log('leftmost');
+				//offset=offset+0;
+			}
+			if (p.x==-300){
+				//console.log('leftmost but 1');
+				offset=offset+1;
+			}
+			if (p.x==-180){
+				//console.log('leftmost but 2');
+				offset=offset+2;
+			}
+			if (p.x==-60){
+				//console.log('leftmost but 3');
+				offset=offset+3;
+			}
+			if (p.x==60){
+				//console.log('leftmost but 4');
+				offset=offset+4;
+			}
+			if (p.x==180){
+				//console.log('leftmost but 5');
+				offset=offset+5;
+			}
+			if (p.x==300){
+				//console.log('leftmost but 6');
+				offset=offset+6;
+			}
+			if (p.x==420){
+				//console.log('leftmost but 7');
+				offset=offset+7;
+			}
+			return offset;
+		}
+		//console.log('nothing clicked');
+		return 'nothing';
+	}
+	
+	function repositionDices() {
+		you=settings['youAre'];
+		if (you=='admin'){
+			scene.getMeshByName('adminDices0').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			scene.getMeshByName('adminDices1').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			scene.getMeshByName('adminDices2').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			scene.getMeshByName('adminDices3').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			
+		}			
+		if (you=='player'){
+			scene.getMeshByName('playerDices0').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			scene.getMeshByName('playerDices1').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			scene.getMeshByName('playerDices2').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+			scene.getMeshByName('playerDices3').rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
+		}		
+	}
+	
+	window.addEventListener("click", function () {
+		var pickResult = scene.pick(scene.pointerX, scene.pointerY);
+		if (pickResult.hit){
+			//console.log(settings);	
+			//console.log(boardState);
+			//console.log(pickResult.pickedMesh.position);
+			
+			p=pickResult.pickedMesh.position;
+			clicked=whatIsClicked(p);
+			you=settings['youAre'];
+			gamestate=boardState['gameState'];
+			//console.log(gamestate, you, clicked);
+			
+			if (gamestate=='adminThrow' && you=='admin' && clicked=='adminDices'){
+				//console.log('emitting: admin throws dices');
+				socket.emit('throwDices');
+				repositionDices()
+			}
+			if (gamestate=='playerThrow' && you=='player' && clicked=='playerDices'){
+				//console.log('emitting: player throws dices');
+				socket.emit('throwDices');
+				repositionDices()
+			}
+			if (gamestate=='rollForStart' && you=='player' && clicked=='playerDices'){
+				//console.log('emitting: player throws rollForStart');
+				socket.emit('throwDices');
+				repositionDices()
+			}
+			if (gamestate=='rollForStart' && you=='admin' && clicked=='adminDices'){
+				//console.log('emitting: admin throws rollForStart');
+				socket.emit('throwDices');
+				repositionDices()
+			}
+			if ([0,1,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23].indexOf(clicked) > -1){
+				if (gamestate=='playerMove' && you=='player'){
+					//console.log('player moves',clicked);
+					socket.emit('moves',clicked);
+				}
+				if (gamestate=='adminMove' && you=='admin'){
+					//console.log('admin moves',clicked);
+					socket.emit('moves',clicked);
+				}
+			}
+			if (gamestate=='playerMove' && you=='player' && (clicked=='playerOut' || clicked=='playerIn')){
+				//console.log('player moves',clicked);
+				socket.emit('moves',clicked);
+			}
+			if (gamestate=='adminMove' && you=='admin' && (clicked=='adminOut' || clicked=='adminIn')){
+				//console.log('admin moves',clicked);
+				socket.emit('moves',clicked);
+			}
+			
+			
+			if ([0,1,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23].indexOf(clicked) > -1){
+				if (gamestate=='playerMoveTo' && you=='player'){
+					//console.log('player movesTo',clicked);
+					socket.emit('movesTo',clicked);
+				}
+				if (gamestate=='adminMoveTo' && you=='admin'){
+					//console.log('admin movesTo',clicked);
+					socket.emit('movesTo',clicked);
+				}
+			}
+			
+			if (gamestate=='playerMoveTo' && you=='player' && (clicked=='nothing' || clicked=='adminOut' || clicked=='adminIn' || clicked=='playerOut' || clicked=='playerIn')){
+				//console.log('player movesTo','nothing');
+				socket.emit('movesTo','nothing');
+			}
+			if (gamestate=='adminMoveTo' && you=='admin' && (clicked=='nothing' || clicked=='adminOut' || clicked=='adminIn' || clicked=='playerOut' || clicked=='playerIn')){
+				//console.log('admin movesTo','nothing');
+				socket.emit('movesTo','nothing');
+			}
+		}else{
+			if (gamestate=='playerMoveTo' && you=='player'){
+				//console.log('player moves to','nothing');
+				socket.emit('movesTo','nothing');
+			}
+			if (gamestate=='adminMoveTo' && you=='admin'){
+				//console.log('admin moves to','nothing');
+				socket.emit('movesTo','nothing');
+			}		
+		}
+	});
+	
+	socket.on('winner', function(message) {
+		//console.log('winner:', message);
+		alert(message);
+		socket.emit('getSettings');
+	    socket.emit('whoAmI');
+	    socket.emit('getState');
+	});
+	
+	socket.on('sound', function(soundfile) {
+		//console.log('play sound:', soundfile);
+		if (soundfile=='roll1.wav'){
+			soundThrowDice1.play();
+		}
+		if (soundfile=='roll2.wav'){
+			soundThrowDice2.play();
+		}
+		if (soundfile=='roll3.wav'){
+			soundThrowDice3.play();
+		}
+		
+	});	
 	
 	socket.on('newState', function(newBoard) {
-		console.log('server says newState', newBoard);
-		gamestate=newBoard[0];
-		topDice=newBoard[1];
-		topPlayerIn=newBoard[2];
-		topPlayerOut=newBoard[3];
-		onBoard=newBoard[4];
-		bottomPlayerIn=newBoard[5];
-		bottomPlayerOut=newBoard[6];
-		bottomDice=newBoard[7];
-		console.log(gamestate);
-		
-		for (var i = 0, len = topDice.length; i < len; i++) {
-			block = scene.getMeshByName("TopDice"+i.toString());
-			if (topDice[i]=='0'){
-				block.material = scene.getMaterialByName("materialDiceRed");
-			} 
-			if (topDice[i]=='1'){
-				block.material = scene.getMaterialByName("materialDiceGreen");
-			} 
-			if (topDice[i]=='2'){
-				block.material = scene.getMaterialByName("materialStone");
-			} 
-			if (topDice[i]=='3'){
-				block.material = scene.getMaterialByName("materialNone");
-			} 
+		//console.log('server says newState', newBoard);
+		boardState=newBoard
+		if (boardState['gameState']=='setup' && settings['youAre']=='admin'){
+			gameStatePrevious='setup';
+			//console.log('setup admin');
+			document.getElementById('setupDialogue').style.display = "block";
+			document.getElementById('renderCanvas').style.display = "none";
+			document.getElementById('adminStones').readOnly = false;
+			document.getElementById('playerStones').readOnly  = false;
+			if (! adminEventsLoaded){
+				adminEventsLoaded=true;
+				document.getElementById('allowOvershoot').addEventListener("mouseup", function (evt) {
+					//console.log('allowOvershoot');
+					if (document.getElementById('allowOvershoot').textContent =="Overshoot"){
+						document.getElementById('allowOvershoot').textContent ="No Overshoot";
+					}else{
+						document.getElementById('allowOvershoot').textContent ="Overshoot";
+					}
+					socket.emit('updateSetting', 'allowOvershoot', document.getElementById('allowOvershoot').textContent);
+	    		});
+	    		document.getElementById('allowBackwards').addEventListener("mouseup", function (evt) {
+	    			//console.log('allowBackwards');
+					if (document.getElementById('allowBackwards').textContent =="No AllowBack"){
+						document.getElementById('allowBackwards').textContent ="AllowBack";
+					}else{
+						document.getElementById('allowBackwards').textContent ="No AllowBack";
+					}
+					socket.emit('updateSetting', 'allowBackwards', document.getElementById('allowBackwards').textContent);
+	    		});
+	    		document.getElementById('route').addEventListener("mouseup", function (evt) {
+	    			//console.log('route');
+					if (document.getElementById('route').textContent =="Short"){
+						document.getElementById('route').textContent ="Long";
+					}else{
+						document.getElementById('route').textContent ="Short";
+					}
+					socket.emit('updateSetting', 'route', document.getElementById('route').textContent);
+	    		});
+	    		document.getElementById('adminColor').addEventListener("mouseup", function (evt) {
+	    			//console.log('adminColor');
+					if (document.getElementById('adminColor').textContent =="Black"){
+						document.getElementById('adminColor').textContent ="White";
+					}else{
+						document.getElementById('adminColor').textContent ="Black";
+					}
+					socket.emit('updateSetting', 'adminColor', document.getElementById('adminColor').textContent);
+	    		});
+	    		document.getElementById('adminStones').addEventListener("keyup", function (evt) {
+	    			//console.log('adminStones');
+	    			socket.emit('updateSetting', 'adminStones', document.getElementById('adminStones').value);
+	    		});
+	    		document.getElementById('playerStones').addEventListener("keyup", function (evt) {
+	    			//console.log('playerStones');
+	    			socket.emit('updateSetting', 'playerStones', document.getElementById('playerStones').value);
+	    		});
+	    		document.getElementById('startRule').addEventListener("mouseup", function (evt) {
+	    			//console.log('startRule');
+					var newValue='';
+					if (document.getElementById('startRule').textContent =="Roll"){
+						newValue="Random";
+					}
+					if (document.getElementById('startRule').textContent =="Random"){
+						newValue="Black";
+					}
+					if (document.getElementById('startRule').textContent =="Black"){
+						newValue="White";
+					}
+					if (document.getElementById('startRule').textContent =="White"){
+						newValue="Roll";
+					}
+					document.getElementById('startRule').textContent =newValue;
+					socket.emit('updateSetting', 'startRule', document.getElementById('startRule').textContent);
+	    		});
+	    		document.getElementById('buttonStartGame').addEventListener("mouseup", function (evt) {
+	    			//console.log('buttonStartGame');
+					socket.emit('startGame');
+	    		});
+	    	}
+			gameStatePrevious='setup';		    	
 		}
-	
-		for (var i = 0, len = topPlayerIn.length; i < len; i++) {
-			var block = scene.getMeshByName("TopIn"+i.toString());
-			if (topPlayerIn[i]=='B'){
-				block.material = scene.getMaterialByName("materialBlack");
-			} 
-			if (topPlayerIn[i]=='W'){
-				block.material = scene.getMaterialByName("materialWhite");
-			} 
-			if (topPlayerIn[i]=='0'){
-				block.material = scene.getMaterialByName("materialNone");
-			} 
-		} 
 		
-		for (var i = 0, len = topDice.length; i < len; i++) {
-			block = scene.getMeshByName("BottomDice"+i.toString());
-			if (bottomDice[i]=='0'){
-				block.material = scene.getMaterialByName("materialDiceRed");
-			} 
-			if (bottomDice[i]=='1'){
-				block.material = scene.getMaterialByName("materialDiceGreen");
-			} 
-			if (bottomDice[i]=='2'){
-				block.material = scene.getMaterialByName("materialStone");
-			} 
-			if (bottomDice[i]=='3'){
-				block.material = scene.getMaterialByName("materialNone");
-			} 
+		if (boardState['gameState']=='setup' && (settings['youAre']=='player' || settings['youAre']=='observer')){
+			//console.log('setup player/observer');
+			document.getElementById('adminStones').readOnly = true;
+			document.getElementById('playerStones').readOnly  = true;
+			document.getElementById('setupDialogue').style.display = "block";
+			document.getElementById('renderCanvas').style.display = "none";
+			gameStatePrevious='setup';
+		}
+		
+		if (boardState['gameState']=='rollForStart'){
+			//console.log('rollForStart');
+			if (gameStatePrevious=='setup' ){
+				document.getElementById('setupDialogue').style.display = "none";
+				document.getElementById('renderCanvas').style.display = "block";
+			}
+			engine.resize();
+			updateBoard();
+			gameStatePrevious='rollForStart';
+		}
+		
+		
+		if (boardState['gameState']=='adminThrow'){
+			//console.log('adminThrow');	
+			//console.log(settings['youAre']);
+			if (gameStatePrevious=='setup'){
+				document.getElementById('setupDialogue').style.display = "none";
+				document.getElementById('renderCanvas').style.display = "block";
+			}
+			engine.resize();
+			updateBoard();
+			gameStatePrevious='adminThrow';
+		}
+		
+		if (boardState['gameState']=='playerThrow'){
+			//console.log('playerThrow');		
+			//console.log(settings['youAre']);
+			if (gameStatePrevious=='setup'){
+				document.getElementById('setupDialogue').style.display = "none";
+				document.getElementById('renderCanvas').style.display = "block";
+				gameStatePrevious='playerThrow';
+			}
+			engine.resize();
+			updateBoard();
+			gameStatePrevious='playerThrow';
+		}
+		
+		
+		if (boardState['gameState']=='adminMove'){
+			//console.log('adminMove');	
+			//console.log(settings['youAre']);
+			updateBoard();
+			gameStatePrevious='adminMove';
+		}
+		
+		if (boardState['gameState']=='playerMove'){
+			//console.log('playerMove');		
+			//console.log(settings['youAre']);
+			updateBoard();
+			gameStatePrevious='playerMove';
+		}
+		
+		if (boardState['gameState']=='adminMoveTo'){
+			//console.log('adminMoveTo');	
+			//console.log(settings['youAre']);
+			updateBoard();
+			gameStatePrevious='adminMoveTo';
+		}
+		
+		if (boardState['gameState']=='playerMoveTo'){
+			//console.log('playerMoveTo');		
+			//console.log(settings['youAre']);
+			updateBoard();
+			gameStatePrevious='playerMoveTo';
+		}
+		
+		if (boardState['gameState']=='paused'){
+			console.log('paused');		
+			updateBoard();
+			gameStatePrevious='paused';
 		}
 	});
 });

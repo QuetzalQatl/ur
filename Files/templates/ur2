@@ -19,19 +19,87 @@
             height  : 100%;
             touch-action: none;
         }
+	}
+    .box {
+		width:98%;
+		height:38%;
+		position:fixed;
+		margin-left:1%; 
+		margin-top:1%; 
+		top:31%;
+		left:0px;
+	}
+	
+	.button {
+		-webkit-transition-duration: 0.1s; /* For Safari */
+		transition-duration: 0.1s;
+		background-color: #504040; 
+		border: 2px solid #101010;
+		color: #FFEEEE;
+		text-align: center;
+		font-size: 42px;
+		width: 98%;
+	}
+	
+	.button:hover {
+		background-color: #908080; 
+		color: white;
+	}
+
+	.text {
+		background-color: #FFFEDD; 
+		border: 1px solid #89258c; 
+		color: #312533;
+		text-align: center;
+		font-size: 42px;
+		width: 98%;
+	}
+	
+	input:-moz-read-only { /* For Firefox */
+		background-color: #F4F4ED;
+	}
+	
+	input:read-only {
+		background-color: #F4F4ED;
+	}
     </style>
 </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
+    <canvas id="renderCanvas" style="display: none;"></canvas>
+ <div id="setupDialogue" style="display: none;">
+ <table class="box">
+    <tr>
+        <td>Nr of Black Pieces: </td><td><input id="blackStones" class="text" readonly="true" value="7"></input></td>
+    </tr>
+    <tr>
+        <td>Nr of White Pieces: </td><td><input id="whiteStones" class="text" readonly="true" value="7"></input></td>
+    </tr>
+    <tr>
+        <td>Overshoot or No Overshoot?</td><td><button class="button" type="button" id="allowOvershoot">Overshoot</button></td>
+    </tr>
+    <tr>
+        <td>Allow going back at then end?</td><td><button class="button" type="button" id="allowBackwards">No AllowBack</button></td>
+    </tr>
+    <tr>
+        <td>Route to take?</td><td><button class="button" type="button" id="route">LLLURRRRRRRDLL</button></td>
+    </tr>
+    <tr>
+        <td>How to determine who starts?</td><td><button class="button" type="button" id="startRule">Roll</button></td>
+    </tr>
+    <tr>
+        <td>Admin has color</td><td><button class="button" type="button" id="adminColor">Black</button></td>
+    </tr>
+    <tr>
+        <td></td><td><button class="button" type="button" id="buttonStartGame">Start Game</button></td>
+    </tr>
+  </table>
+ </div>    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
     <script>
 window.addEventListener('DOMContentLoaded', function(){
 	var socket = io.connect('/urlobbie');
-	
-	function emit(path, params) {
-		socket.emit(path, params);
-	}
-
+	var state;
+	var boardCreated=false;
 	%%GAMEVARS%%
 	
 	//  get the canvas DOM element
@@ -63,7 +131,46 @@ window.addEventListener('DOMContentLoaded', function(){
 	    materialBlack.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
 	    materialBlack.backFaceCulling = true;
 		
-		
+		var materialWood0= new BABYLON.StandardMaterial("materialWood0", scene);
+	    materialWood0.diffuseTexture = new BABYLON.Texture("/wood0.png", scene);
+		materialWood0.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood0.backFaceCulling = true;
+	    
+	    var materialWood1= new BABYLON.StandardMaterial("materialWood1", scene);
+	    materialWood1.diffuseTexture = new BABYLON.Texture("/wood1.png", scene);
+		materialWood1.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood1.backFaceCulling = true;
+	    
+	    var materialWood2= new BABYLON.StandardMaterial("materialWood2", scene);
+	    materialWood2.diffuseTexture = new BABYLON.Texture("/wood2.png", scene);
+		materialWood2.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood2.backFaceCulling = true;
+	    
+	    var materialWood3= new BABYLON.StandardMaterial("materialWood3", scene);
+	    materialWood3.diffuseTexture = new BABYLON.Texture("/wood3.png", scene);
+		materialWood3.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood3.backFaceCulling = true;
+	    
+	    var materialWood4= new BABYLON.StandardMaterial("materialWood4", scene);
+	    materialWood4.diffuseTexture = new BABYLON.Texture("/wood4.png", scene);
+		materialWood4.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood4.backFaceCulling = true;
+	    
+	    var materialWood5= new BABYLON.StandardMaterial("materialWood5", scene);
+	    materialWood5.diffuseTexture = new BABYLON.Texture("/wood5.png", scene);
+		materialWood5.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood5.backFaceCulling = true;
+	    
+	    var materialWood6= new BABYLON.StandardMaterial("materialWood6", scene);
+	    materialWood6.diffuseTexture = new BABYLON.Texture("/wood6.png", scene);
+		materialWood6.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood6.backFaceCulling = true;
+	    
+	    var materialWood7= new BABYLON.StandardMaterial("materialWood7", scene);
+	    materialWood7.diffuseTexture = new BABYLON.Texture("/wood7.png", scene);
+		materialWood7.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+	    materialWood7.backFaceCulling = true;
+	    
 	    var materialStone= new BABYLON.StandardMaterial("materialStone", scene);
 	    materialStone.diffuseTexture = new BABYLON.Texture("/stone.png", scene);
 		materialStone.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
@@ -88,27 +195,51 @@ window.addEventListener('DOMContentLoaded', function(){
 		materialNone.wireframe=true;
 	    materialNone.backFaceCulling = true;
 		materialNone.alpha = 0.0;
-	    
-		var x;
+		
+	    var x;
 	    var y;
 	    var z;
 	    
 	    x=0;
 	    y=0;
 	    z=0;
-	    
-		for (var i = 0, len = blocksArray.length; i < len; i++) {
+	    var counter=0;
+	    var woodtype=[0,5,4,1,2,7,6,3,  1,2,3,4,5,0,7,6,   2,5,6,7,4,3,0,1]
+		for (var i = 0, len = state['board'].length; i < len; i++) {
 			var newx=(x-3.5)*120;
 			var newy=(y-1.0)*120;
 			var newz=(z-.5)*120;
 			var block = BABYLON.Mesh.CreateBox("block"+i.toString(), 120, scene);
-			if (blocksArray[i]=='R'){
+			if (state['board'][i]=='R'){
 				block.material = materialRose;
 			} 
-			if (blocksArray[i]=='S'){
-				block.material = materialStone;
+			if (state['board'][i]=='S'){
+				type=woodtype[counter];
+					block.material = materialWood0;
+				}
+				if (type==1){
+					block.material = materialWood1;
+				}
+				if (type==2){
+					block.material = materialWood2;
+				}
+				if (type==3){
+					block.material = materialWood3;
+				}
+				if (type==4){
+					block.material = materialWood4;
+				}
+				if (type==5){
+					block.material = materialWood5;
+				}
+				if (type==6){
+					block.material = materialWood6;
+				}
+				if (type==7){
+					block.material = materialWood7;
+				}
 			} 
-			if (blocksArray[i]=='0'){
+			if (state['board'][i]=='0'){
 				block.material = materialNone;
 			} 
 			block.position.x=newx;
@@ -120,8 +251,11 @@ window.addEventListener('DOMContentLoaded', function(){
 				x=0;
 				y=y+1;
 			}
+			counter=counter+1;
+			
 		} 
-		
+	    
+	    
 		x=0;
 	    y=0;
 	    z=0;
@@ -326,7 +460,6 @@ window.addEventListener('DOMContentLoaded', function(){
 			block.rotate(BABYLON.Axis.Z, Math.PI* Math.random() * 2.0, BABYLON.Space.LOCAL);
 			x=x+1;
 		} 
-	
 	    return scene;
 	};
 
@@ -343,10 +476,13 @@ window.addEventListener('DOMContentLoaded', function(){
 	    engine.resize();
 	});
 	
+	
+	
 	// Socket events:
 	socket.on('connect', function() {
 	    console.log('socket.id: ', socket.id, ' connected');
-	    emit('test');
+	    socket.emit('getSettings');
+	    socket.emit('getState');
 	});
 	
 	socket.on('connect_error', (error) => {
@@ -369,62 +505,133 @@ window.addEventListener('DOMContentLoaded', function(){
 	  console.log(reason);
 	});
 	
+	socket.on('gamePaused', function() {
+		console.log('Game Paused');
+	});	
+	
+	socket.on('newSetting', function(what, to) {
+		console.log(what, to);	
+		if (what=='whiteStones' || what=='blackStones'){
+			document.getElementById(what).value =to;
+		}else{
+			document.getElementById(what).textContent =to;
+		}
+	});
 	
 	socket.on('newState', function(newBoard) {
 		console.log('server says newState', newBoard);
-		gamestate=newBoard[0];
-		topDice=newBoard[1];
-		topPlayerIn=newBoard[2];
-		topPlayerOut=newBoard[3];
-		onBoard=newBoard[4];
-		bottomPlayerIn=newBoard[5];
-		bottomPlayerOut=newBoard[6];
-		bottomDice=newBoard[7];
-		console.log(gamestate);
-		
-		for (var i = 0, len = topDice.length; i < len; i++) {
-			block = scene.getMeshByName("TopDice"+i.toString());
-			if (topDice[i]=='0'){
-				block.material = scene.getMaterialByName("materialDiceRed");
-			} 
-			if (topDice[i]=='1'){
-				block.material = scene.getMaterialByName("materialDiceGreen");
-			} 
-			if (topDice[i]=='2'){
-				block.material = scene.getMaterialByName("materialStone");
-			} 
-			if (topDice[i]=='3'){
-				block.material = scene.getMaterialByName("materialNone");
-			} 
+		state=newBoard
+		if (state['gameState']=='setupAdmin'){
+			console.log('setupAdmin');
+			document.getElementById('setupDialogue').style.display = "block";
+			document.getElementById('blackStones').readOnly = false;
+			document.getElementById('whiteStones').readOnly  = false;
+			document.getElementById('allowOvershoot').addEventListener("mouseup", function (evt) {
+				console.log('allowOvershoot');
+				if (document.getElementById('allowOvershoot').textContent =="Overshoot"){
+					document.getElementById('allowOvershoot').textContent ="No Overshoot";
+				}else{
+					document.getElementById('allowOvershoot').textContent ="Overshoot";
+				}
+				socket.emit('updateSetting', 'allowOvershoot', document.getElementById('allowOvershoot').textContent);
+    		});
+    		document.getElementById('allowBackwards').addEventListener("mouseup", function (evt) {
+    			console.log('allowBackwards');
+				if (document.getElementById('allowBackwards').textContent =="No AllowBack"){
+					document.getElementById('allowBackwards').textContent ="AllowBack";
+				}else{
+					document.getElementById('allowBackwards').textContent ="No AllowBack";
+				}
+				socket.emit('updateSetting', 'allowBackwards', document.getElementById('allowBackwards').textContent);
+    		});
+    		document.getElementById('route').addEventListener("mouseup", function (evt) {
+    			console.log('route');
+				if (document.getElementById('route').textContent =="LLLURRRRRRRDLL"){
+					document.getElementById('route').textContent ="LLLUURDRURDRRRURDDDL";
+				}else{
+					document.getElementById('route').textContent ="LLLURRRRRRRDLL";
+				}
+				socket.emit('updateSetting', 'route', document.getElementById('route').textContent);
+    		});
+    		document.getElementById('adminColor').addEventListener("mouseup", function (evt) {
+    			console.log('adminColor');
+				if (document.getElementById('adminColor').textContent =="Black"){
+					document.getElementById('adminColor').textContent ="White";
+				}else{
+					document.getElementById('adminColor').textContent ="Black";
+				}
+				socket.emit('updateSetting', 'adminColor', document.getElementById('adminColor').textContent);
+    		});
+    		document.getElementById('blackStones').addEventListener("keyup", function (evt) {
+    			console.log('blackStones');
+    			socket.emit('updateSetting', 'blackStones', document.getElementById('blackStones').value);
+    		});
+    		document.getElementById('whiteStones').addEventListener("keyup", function (evt) {
+    			console.log('whiteStones');
+    			socket.emit('updateSetting', 'whiteStones', document.getElementById('whiteStones').value);
+    		});
+    		document.getElementById('startRule').addEventListener("mouseup", function (evt) {
+    			console.log('startRule');
+				var newValue='';
+				if (document.getElementById('startRule').textContent =="Roll"){
+					newValue="Random";
+				}
+				if (document.getElementById('startRule').textContent =="Random"){
+					newValue="Black";
+				}
+				if (document.getElementById('startRule').textContent =="Black"){
+					newValue="White";
+				}
+				if (document.getElementById('startRule').textContent =="White"){
+					newValue="Roll";
+				}
+				document.getElementById('startRule').textContent =newValue;
+				socket.emit('updateSetting', 'startRule', document.getElementById('startRule').textContent);
+    		});
+    		document.getElementById('buttonStartGame').addEventListener("mouseup", function (evt) {
+    			console.log('buttonStartGame');
+				socket.emit('startGame');
+    		});
 		}
-	
-		for (var i = 0, len = topPlayerIn.length; i < len; i++) {
-			var block = scene.getMeshByName("TopIn"+i.toString());
-			if (topPlayerIn[i]=='B'){
-				block.material = scene.getMaterialByName("materialBlack");
-			} 
-			if (topPlayerIn[i]=='W'){
-				block.material = scene.getMaterialByName("materialWhite");
-			} 
-			if (topPlayerIn[i]=='0'){
-				block.material = scene.getMaterialByName("materialNone");
-			} 
-		} 
 		
-		for (var i = 0, len = topDice.length; i < len; i++) {
-			block = scene.getMeshByName("BottomDice"+i.toString());
-			if (bottomDice[i]=='0'){
-				block.material = scene.getMaterialByName("materialDiceRed");
-			} 
-			if (bottomDice[i]=='1'){
-				block.material = scene.getMaterialByName("materialDiceGreen");
-			} 
-			if (bottomDice[i]=='2'){
-				block.material = scene.getMaterialByName("materialStone");
-			} 
-			if (bottomDice[i]=='3'){
-				block.material = scene.getMaterialByName("materialNone");
-			} 
+		if (state['gameState']=='setupPlayer'){
+			console.log('setupPlayer');
+			document.getElementById('setupDialogue').style.display = "block";
+			document.getElementById('renderCanvas').style.display = "none";
+		}
+		
+		if (state['gameState']=='setupObserver'){
+			console.log('setupObserver');
+			document.getElementById('setupDialogue').style.display = "block";
+			document.getElementById('renderCanvas').style.display = "none";
+		}
+		
+		if (state['gameState']=='rollForStart'){
+			console.log('rollForStart');
+			document.getElementById('setupDialogue').style.display = "none";
+			document.getElementById('renderCanvas').style.display = "block";
+			engine.resize();
+		}
+		
+		if (state['gameState']=='adminsTurn'){
+			console.log('adminsTurn');		
+			document.getElementById('setupDialogue').style.display = "none";
+			document.getElementById('renderCanvas').style.display = "block";
+			engine.resize();
+		}
+		
+		if (state['gameState']=='playersTurn'){
+			console.log('playersTurn');		
+			document.getElementById('setupDialogue').style.display = "none";
+			document.getElementById('renderCanvas').style.display = "block";
+			engine.resize();
+		}
+		
+		if (state['gameState']=='paused'){
+			console.log('paused');		
+			document.getElementById('setupDialogue').style.display = "none";
+			document.getElementById('renderCanvas').style.display = "block";
+			engine.resize();
 		}
 	});
 });

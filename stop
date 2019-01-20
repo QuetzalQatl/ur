@@ -1,4 +1,0 @@
-#!/usr/local/bin/bash
-
-echo stopping server...
-docker stop 345dea708571
